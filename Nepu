@@ -1,0 +1,574 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Napu — School Assistant</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+
+<!-- KaTeX CSS and JS Engine for High-Fidelity Math Formulas -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
+
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  
+  /* Theme Variables System */
+  :root {
+    --black: #0a0a0a; --white: #f5f5f0; --gray-light: #e8e8e3;
+    --gray-mid: #b0b0a8; --gray-dark: #3a3a35; --border-color: #2a2a25;
+    --border: 1px solid var(--border-color);
+    --bg: var(--black); --text: var(--white); --text-muted: var(--gray-mid);
+    --text-body: var(--gray-light); --code-bg: #1a1a16; --pre-bg: #111;
+    --msg-border: #161612;
+  }
+
+  /* Light Theme Overrides */
+  [data-theme="light"] {
+    --bg: #f5f5f0; --text: #0a0a0a; --text-muted: #6a6a60;
+    --text-body: #22221c; --border-color: #d0d0c5;
+    --code-bg: #eaeae0; --pre-bg: #e2e2d7;
+    --msg-border: #eaeae0;
+  }
+
+  body { background: var(--bg); color: var(--text); font-family: 'IBM Plex Sans', sans-serif; height: 100vh; display: flex; overflow: hidden; transition: background 0.2s, color 0.2s; position: relative; }
+  
+  /* Backdrop overlay when slider panel menu is visible */
+  .sidebar-overlay { position: absolute; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.4); z-index: 99; display: none; opacity: 0; transition: opacity 0.3s ease; }
+  .sidebar-overlay.active { display: block; opacity: 1; }
+
+  /* Animated Left Slider Panel (Sidebar) */
+  .sidebar { position: absolute; top: 0; left: -290px; width: 280px; height: 100vh; border-right: var(--border); display: flex; flex-direction: column; background: var(--bg); z-index: 100; transition: left 0.3s cubic-bezier(0.4, 0, 0.2, 1), background 0.2s; box-shadow: 10px 0 30px rgba(0,0,0,0.2); }
+  .sidebar.open { left: 0; }
+  
+  .sidebar-section { border-bottom: var(--border); padding: 20px; }
+  .sidebar-title { font-family: 'IBM Plex Mono', monospace; font-size: 0.68rem; letter-spacing: 0.12em; text-transform: uppercase; color: var(--text-muted); margin-bottom: 14px; }
+  
+  /* Multi-GUI Panel Management Layout Switchers */
+  .gui-panel { display: none; }
+  .gui-panel.active { display: block; animation: slideInPanel 0.2s ease; }
+  @keyframes slideInPanel { from { opacity: 0; transform: translateX(10px); } to { opacity: 1; transform: translateX(0); } }
+
+  /* Menu Item Buttons */
+  .menu-btn-item { width: 100%; text-align: left; background: var(--code-bg); border: var(--border); padding: 10px 14px; color: var(--text); font-family: 'IBM Plex Sans', sans-serif; font-size: 0.85rem; cursor: pointer; border-radius: 2px; margin-bottom: 6px; display: flex; justify-content: space-between; align-items: center; }
+  .menu-btn-item:hover { border-color: var(--text); }
+  .back-btn { background: transparent; border: none; color: var(--text-muted); font-family: 'IBM Plex Mono', monospace; font-size: 0.72rem; cursor: pointer; margin-bottom: 14px; display: inline-flex; align-items: center; gap: 4px; }
+  .back-btn:hover { color: var(--text); }
+
+  /* Settings internal grid items setup */
+  .settings-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
+  .settings-label { font-size: 0.85rem; font-weight: 400; color: var(--text); }
+  .theme-select { background: var(--code-bg); border: var(--border); color: var(--text); font-family: 'IBM Plex Mono', monospace; font-size: 0.72rem; padding: 6px 10px; outline: none; cursor: pointer; width: 100%; text-align: last-center; }
+  
+  /* Credits block layout container properties mapping */
+  .credits-box { background: var(--pre-bg); border: var(--border); padding: 10px; font-family: 'IBM Plex Mono', monospace; font-size: 0.68rem; line-height: 1.6; color: var(--text-muted); }
+  .credits-box strong { color: var(--text); font-weight: 500; }
+
+  .history-pane { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+  .history-list { flex: 1; overflow-y: auto; padding: 12px; display: flex; flex-direction: column; gap: 4px; }
+  .history-item { width: 100%; text-align: left; background: transparent; border: none; padding: 10px 14px; color: var(--text); font-family: 'IBM Plex Sans', sans-serif; font-size: 0.85rem; cursor: pointer; display: flex; flex-direction: column; gap: 2px; border-radius: 2px; }
+  .history-item:hover { background: var(--code-bg); }
+  .history-item .hist-sub { font-family: 'IBM Plex Mono', monospace; font-size: 0.65rem; color: var(--text-muted); text-transform: uppercase; }
+  .history-item .hist-preview { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; opacity: 0.8; }
+  .history-empty { padding: 20px; text-align: center; font-family: 'IBM Plex Mono', monospace; font-size: 0.72rem; color: var(--text-muted); line-height: 1.5; margin: auto 0; }
+
+  /* Main Area Workspace Setup */
+  .main-content { flex: 1; display: flex; flex-direction: column; height: 100vh; overflow: hidden; width: 100%; }
+  header { border-bottom: var(--border); padding: 18px 32px; display: flex; align-items: center; justify-content: space-between; flex-shrink: 0; gap: 16px; }
+  .header-left { display: flex; align-items: center; gap: 16px; }
+  
+  /* Modern Industrial Slider Trigger */
+  .slider-trigger { background: transparent; border: var(--border); color: var(--text); font-family: 'IBM Plex Mono', monospace; font-size: 0.72rem; padding: 6px 12px; cursor: pointer; text-transform: uppercase; letter-spacing: 0.05em; display: flex; align-items: center; gap: 6px; }
+  .slider-trigger:hover { background: var(--code-bg); }
+  .slider-trigger svg { width: 12px; height: 12px; fill: currentColor; }
+
+  .logo { font-family: 'Playfair Display', serif; font-size: 1.4rem; color: var(--text); font-weight: 700; letter-spacing: -0.02em; }
+  .logo span { color: var(--text-muted); font-size: 0.85rem; font-family: 'IBM Plex Mono', monospace; margin-left: 12px; font-weight: 400; }
+  .powered { font-family: 'IBM Plex Mono', monospace; font-size: 0.72rem; color: var(--text-muted); border: 1px solid var(--border-color); padding: 5px 12px; display: inline-block; }
+  
+  .chat-container { flex: 1; overflow-y: auto; padding: 32px; display: flex; flex-direction: column; scrollbar-width: thin; scrollbar-color: var(--border-color) transparent; }
+  .chat-container::-webkit-scrollbar { width: 4px; }
+  .chat-container::-webkit-scrollbar-thumb { background: var(--border-color); }
+  .empty-state { margin: auto; text-align: center; max-width: 400px; opacity: 0.5; }
+  .empty-state h2 { font-family: 'Playfair Display', serif; font-size: 2rem; margin-bottom: 10px; font-weight: 400; color: var(--text); }
+  .empty-state p { font-family: 'IBM Plex Mono', monospace; font-size: 0.78rem; color: var(--text-muted); line-height: 1.7; }
+  
+  .message { display: flex; gap: 18px; padding: 22px 0; border-bottom: 1px solid var(--msg-border); animation: fadeIn 0.25s ease; }
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
+  .message-role { font-family: 'IBM Plex Mono', monospace; font-size: 0.68rem; letter-spacing: 0.12em; text-transform: uppercase; color: var(--text-muted); min-width: 60px; padding-top: 3px; flex-shrink: 0; }
+  .message.user .message-role { color: var(--text); }
+  .message-content { flex: 1; font-size: 0.93rem; line-height: 1.75; color: var(--text-body); font-weight: 300; position: relative; }
+  .message.user .message-content { color: var(--text); font-weight: 400; }
+  
+  /* Caret indicator blinking cursor for dynamic typing layout emulation */
+  .typing-cursor::after { content: '▋'; margin-left: 2px; color: var(--text); animation: cursorBlink 0.8s infinite; }
+  @keyframes cursorBlink { 0%, 100% { opacity: 0; } 50% { opacity: 1; } }
+
+  .message-content p { margin-bottom: 10px; }
+  .message-content p:last-child { margin-bottom: 0; }
+  .message-content strong { color: var(--text); font-weight: 500; }
+  .message-content code { font-family: 'IBM Plex Mono', monospace; font-size: 0.82em; background: var(--code-bg); border: var(--border); padding: 1px 6px; color: var(--text); }
+  .message-content pre { background: var(--pre-bg); border: var(--border); padding: 16px; overflow-x: auto; margin: 12px 0; font-family: 'IBM Plex Mono', monospace; font-size: 0.82rem; line-height: 1.6; }
+  .message-content pre code { background: none; border: none; padding: 0; }
+  
+  .typing-dots span { display: inline-block; width: 5px; height: 5px; background: var(--text-muted); border-radius: 50%; margin: 0 2px; animation: blink 1.2s infinite; }
+  .typing-dots span:nth-child(2) { animation-delay: 0.2s; }
+  .typing-dots span:nth-child(3) { animation-delay: 0.4s; }
+  @keyframes blink { 0%, 80%, 100% { opacity: 0.2; } 40% { opacity: 1; } }
+  
+  .subject-chips { display: flex; gap: 8px; padding: 0 32px 14px; flex-wrap: wrap; flex-shrink: 0; }
+  .chip { font-family: 'IBM Plex Mono', monospace; font-size: 0.7rem; padding: 5px 12px; border: var(--border); color: var(--text-muted); cursor: pointer; transition: all 0.15s; background: transparent; white-space: nowrap; }
+  .chip:hover, .chip.active { border-color: var(--text); color: var(--text); }
+  
+  .input-bar { border-top: var(--border); padding: 20px 32px; display: flex; gap: 12px; align-items: flex-end; flex-shrink: 0; }
+  textarea { flex: 1; background: transparent; border: var(--border); color: var(--text); font-family: 'IBM Plex Sans', sans-serif; font-size: 0.9rem; padding: 13px 16px; outline: none; resize: none; min-height: 48px; max-height: 160px; line-height: 1.5; transition: border-color 0.2s; font-weight: 300; }
+  textarea:focus { border-color: var(--text); }
+  textarea::placeholder { color: var(--text-muted); }
+  
+  .send-btn { background: var(--text); color: var(--bg); border: none; width: 48px; height: 48px; cursor: pointer; display: flex; align-items: center; justify-content: center; flex-shrink: 0; transition: opacity 0.2s; }
+  .send-btn:hover { opacity: 0.85; }
+  .send-btn:disabled { opacity: 0.3; cursor: default; }
+  .send-btn svg { width: 18px; height: 18px; fill: none; stroke: currentColor; }
+  .error-msg { font-family: 'IBM Plex Mono', monospace; font-size: 0.78rem; color: #888; border-left: 2px solid #555; padding-left: 12px; }
+  .katex-display { margin: 12px 0; overflow-x: auto; overflow-y: hidden; }
+</style>
+</head>
+<body>
+
+<!-- Blur click capture sheet overlay -->
+<div class="sidebar-overlay" id="sidebarOverlay" onclick="toggleSidebar(false)"></div>
+
+<!-- Left Sidebar Slider Container Panel -->
+<div class="sidebar" id="sidebarMenu">
+  <!-- Multi-GUI Config Panel Section -->
+  <div class="sidebar-section">
+    <!-- Root UI Panel Menu Screen -->
+    <div id="guiPanelRoot" class="gui-panel active">
+      <div class="sidebar-title">Menu Workspace</div>
+      <button class="menu-btn-item" onclick="switchGuiPanel('guiPanelTheme')">
+        <span>Theme Settings</span>
+        <span>→</span>
+      </button>
+    </div>
+
+    <!-- Secondary Layer GUI View: Theme Configuration Screen -->
+    <div id="guiPanelTheme" class="gui-panel">
+      <button class="back-btn" onclick="switchGuiPanel('guiPanelRoot')">← Back</button>
+      <div class="sidebar-title">Choose Theme</div>
+      <div class="settings-row">
+        <select class="theme-select" id="themeSelector" onchange="changeTheme(this.value)">
+          <option value="dark">Black / Monochrome</option>
+          <option value="light">White / Structured</option>
+        </select>
+      </div>
+    </div>
+  </div>
+
+  <!-- Credits Panel Module -->
+  <div class="sidebar-section">
+    <div class="sidebar-title">Credits</div>
+    <div class="credits-box">
+      <div><strong>Owner:</strong> alizain</div>
+      <div><strong>Co-Founder:</strong> Talha</div>
+      <div><strong>Engine:</strong> #gemini</div>
+    </div>
+  </div>
+
+  <!-- Saved Chat Logs Section -->
+  <div class="history-pane">
+    <div class="sidebar-section" style="border-bottom: none; padding-bottom: 0;">
+      <div class="sidebar-title" style="margin-bottom: 4px;">Saved Chats</div>
+    </div>
+    <div class="history-list" id="historyList">
+      <div class="history-empty">No active channels cataloged yet. Send a message to open logs.</div>
+    </div>
+  </div>
+</div>
+
+<!-- Main Workspace Desk Space -->
+<div class="main-content">
+  <header>
+    <div class="header-left">
+      <button class="slider-trigger" onclick="toggleSidebar(true)">
+        <svg viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>
+        Menu
+      </button>
+      <div class="logo">Napu <span>/ school assistant</span></div>
+    </div>
+    <div class="powered">✦ Powered by Napu Co.</div>
+  </header>
+
+  <div class="subject-chips">
+    <button class="chip" onclick="setSubject(this,'Math')">Math</button>
+    <button class="chip" onclick="setSubject(this,'Physics')">Physics</button>
+    <button class="chip" onclick="setSubject(this,'Chemistry')">Chemistry</button>
+    <button class="chip" onclick="setSubject(this,'History')">History</button>
+    <button class="chip" onclick="setSubject(this,'Biology')">Biology</button>
+    <button class="chip" onclick="setSubject(this,'English')">English</button>
+    <button class="chip" onclick="setSubject(this,'Computer Science')">CS</button>
+    <button class="chip" onclick="setSubject(this,'Geography')">Geography</button>
+  </div>
+
+  <div class="chat-container" id="chat">
+    <div class="empty-state" id="emptyState">
+      <h2>Ask anything.</h2>
+      <p>Welcome to Napu. Type your question below or pick a subject tab to pivot tracking focuses.</p>
+    </div>
+  </div>
+
+  <div class="input-bar">
+    <textarea id="questionInput" placeholder="Ask your school question..." rows="1"
+      onkeydown="handleKey(event)" oninput="autoResize(this)"></textarea>
+    <button class="send-btn" id="sendBtn" onclick="sendMessage()" title="Send">
+      <svg viewBox="0 0 24 24" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+        <line x1="22" y1="2" x2="11" y2="13"></line>
+        <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+      </svg>
+    </button>
+  </div>
+</div>
+
+<script>
+  const API_KEY = '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';
+  const API_URL = 'https://openrouter.ai/api/v1/chat/completions';
+  
+  let currentSubject = '';
+  let isLoading = false;
+  let activeChatId = null;
+  let history = [];
+  let savedChats = JSON.parse(localStorage.getItem('napu_saved_chats')) || [];
+
+  window.addEventListener('DOMContentLoaded', () => {
+    renderHistorySidebar();
+    const savedTheme = localStorage.getItem('napu_theme') || 'dark';
+    document.getElementById('themeSelector').value = savedTheme;
+    changeTheme(savedTheme);
+  });
+
+  /* Slider panel open/close handler */
+  function toggleSidebar(open) {
+    const sidebar = document.getElementById('sidebarMenu');
+    const overlay = document.getElementById('sidebarOverlay');
+    if (open) {
+      sidebar.classList.add('open');
+      overlay.classList.add('active');
+    } else {
+      sidebar.classList.remove('open');
+      overlay.classList.remove('active');
+      setTimeout(() => { switchGuiPanel('guiPanelRoot'); }, 300); // Reset GUI window back to main root on exit
+    }
+  }
+
+  /* Multi GUI Layer Switcher mapping controller */
+  function switchGuiPanel(panelId) {
+    document.querySelectorAll('.gui-panel').forEach(panel => panel.classList.remove('active'));
+    document.getElementById(panelId).classList.add('active');
+  }
+
+  function changeTheme(theme) {
+    const root = document.documentElement;
+    if (theme === 'light') {
+      root.setAttribute('data-theme', 'light');
+    } else {
+      root.removeAttribute('data-theme');
+    }
+    localStorage.setItem('napu_theme', theme);
+  }
+  
+  function setSubject(el, s) {
+    if (history.length > 0) saveActiveChatToStorage();
+
+    if (currentSubject === s) {
+      currentSubject = '';
+      el.classList.remove('active');
+    } else {
+      currentSubject = s;
+      document.querySelectorAll('.chip').forEach(c => c.classList.remove('active'));
+      el.classList.add('active');
+    }
+
+    activeChatId = null;
+    history = [];
+    resetChatUI();
+    document.getElementById('questionInput').focus();
+  }
+
+  function resetChatUI() {
+    const chat = document.getElementById('chat');
+    chat.innerHTML = `
+      <div class="empty-state" id="emptyState">
+        <h2>${currentSubject ? currentSubject : 'Ask anything.'} Focus</h2>
+        <p>The conversation was reset. Ask Napu anything regarding this course track.</p>
+      </div>`;
+  }
+  
+  function handleKey(e) {
+    if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); }
+  }
+  
+  function autoResize(el) {
+    el.style.height = 'auto';
+    el.style.height = Math.min(el.scrollHeight, 160) + 'px';
+  }
+  
+  function appendMessage(role, content) {
+    const emptyState = document.getElementById('emptyState');
+    if (emptyState) emptyState.remove();
+    
+    const chat = document.getElementById('chat');
+    const div = document.createElement('div');
+    div.className = 'message ' + role;
+    
+    const roleLabel = document.createElement('div');
+    roleLabel.className = 'message-role';
+    roleLabel.textContent = role === 'user' ? 'You' : 'AI';
+    
+    const contentDiv = document.createElement('div');
+    contentDiv.className = 'message-content';
+    
+    if (content === '__typing__') {
+      contentDiv.innerHTML = '<div class="typing-dots"><span></span><span></span><span></span></div>';
+      div.id = 'typingIndicator';
+    } else {
+      contentDiv.innerHTML = formatText(content);
+    }
+    
+    div.appendChild(roleLabel);
+    div.appendChild(contentDiv);
+    chat.appendChild(div);
+    chat.scrollTop = chat.scrollHeight;
+    
+    // Process math parsing after text has been applied
+    if (content !== '__typing__' && window.renderMathInElement) {
+      renderMathInElement(contentDiv, {
+        delimiters: [
+          {left: '$$', right: '$$', display: true},
+          {left: '$', right: '$', display: false},
+          {left: '\\(', right: '\\)', display: false},
+          {left: '\\[', right: '\\]', display: true}
+        ],
+        throwOnError: false
+      });
+    }
+    return div;
+  }
+
+  /* Simulated Character-by-Character Teletype Streaming Engine */
+  function streamMessageAnimated(content) {
+    const emptyState = document.getElementById('emptyState');
+    if (emptyState) emptyState.remove();
+
+    const chat = document.getElementById('chat');
+    const div = document.createElement('div');
+    div.className = 'message assistant';
+    
+    const roleLabel = document.createElement('div');
+    roleLabel.className = 'message-role';
+    roleLabel.textContent = 'AI';
+    
+    const contentDiv = document.createElement('div');
+    contentDiv.className = 'message-content typing-cursor';
+    
+    div.appendChild(roleLabel);
+    div.appendChild(contentDiv);
+    chat.appendChild(div);
+    
+    let currentIdx = 0;
+    // Faster text distribution for fluid readability (12ms updates)
+    const intervalTime = 12; 
+    
+    return new Promise((resolve) => {
+      const timer = setInterval(() => {
+        currentIdx += 3; // Step up chunk size to keep layout rapid but visibly animated
+        if (currentIdx >= content.length) {
+          currentIdx = content.length;
+          clearInterval(timer);
+          contentDiv.innerHTML = formatText(content);
+          contentDiv.classList.remove('typing-cursor');
+          
+          if (window.renderMathInElement) {
+            renderMathInElement(contentDiv, {
+              delimiters: [
+                {left: '$$', right: '$$', display: true},
+                {left: '$', right: '$', display: false}
+              ],
+              throwOnError: false
+            });
+          }
+          chat.scrollTop = chat.scrollHeight;
+          resolve();
+        } else {
+          // Provide raw text layout composition previewing while parsing completes
+          contentDiv.innerHTML = formatText(content.substring(0, currentIdx));
+          chat.scrollTop = chat.scrollHeight;
+        }
+      }, intervalTime);
+    });
+  }
+  
+  function formatText(text) {
+    const codeBlocks = [];
+    let preservedText = text.replace(/```([\s\S]*?)```/g, function(match, code) {
+      codeBlocks.push('<pre><code>' + escapeHTML(code.trim()) + '</code></pre>');
+      return '___CODEBLOCK_VAL_MARKER_' + (codeBlocks.length - 1) + '___';
+    });
+
+    preservedText = escapeHTML(preservedText);
+    preservedText = preservedText
+      .replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')
+      .replace(/\*([^*]+)\*/g, '<em>$1</em>')
+      .replace(/`([^`]+)`/g, '<code>$1</code>');
+
+    let splitParagraphs = preservedText.split(/\n\n+/).map(p => p.trim()).filter(Boolean);
+    let compiledHTML = splitParagraphs.map(p => {
+      if (p.startsWith('___CODEBLOCK_VAL_MARKER_')) {
+        const index = parseInt(p.match(/\d+/)[0], 10);
+        return codeBlocks[index];
+      }
+      return '<p>' + p.replace(/\n/g, '<br>') + '</p>';
+    }).join('');
+
+    codeBlocks.forEach((block, idx) => {
+      compiledHTML = compiledHTML.replace('___CODEBLOCK_VAL_MARKER_' + idx + '___', block);
+    });
+    return compiledHTML;
+  }
+
+  function escapeHTML(str) {
+    return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  }
+
+  function saveActiveChatToStorage() {
+    if (history.length === 0) return;
+    
+    if (!activeChatId) {
+      activeChatId = 'chat_' + Date.now();
+      const initialQuestion = history[0].content;
+      savedChats.unshift({
+        id: activeChatId,
+        subject: currentSubject || 'General',
+        preview: initialQuestion,
+        logs: history
+      });
+    } else {
+      const match = savedChats.find(c => c.id === activeChatId);
+      if (match) match.logs = history;
+    }
+    
+    localStorage.setItem('napu_saved_chats', JSON.stringify(savedChats));
+    renderHistorySidebar();
+  }
+
+  function renderHistorySidebar() {
+    const container = document.getElementById('historyList');
+    if (savedChats.length === 0) {
+      container.innerHTML = '<div class="history-empty">No active channels cataloged yet. Send a message to open logs.</div>';
+      return;
+    }
+
+    container.innerHTML = '';
+    savedChats.forEach(chat => {
+      const btn = document.createElement('button');
+      btn.className = 'history-item';
+      if (chat.id === activeChatId) btn.style.background = 'var(--code-bg)';
+      btn.onclick = () => { loadSavedChatSession(chat.id); toggleSidebar(false); };
+      
+      btn.innerHTML = `
+        <span class="hist-sub">${chat.subject}</span>
+        <span class="hist-preview">${escapeHTML(chat.preview)}</span>
+      `;
+      container.appendChild(btn);
+    });
+  }
+
+  function loadSavedChatSession(id) {
+    if (history.length > 0) saveActiveChatToStorage();
+
+    const selected = savedChats.find(c => c.id === id);
+    if (!selected) return;
+
+    activeChatId = selected.id;
+    history = [...selected.logs];
+    currentSubject = selected.subject === 'General' ? '' : selected.subject;
+    
+    document.querySelectorAll('.chip').forEach(c => {
+      c.classList.remove('active');
+      if(c.textContent.toLowerCase() === currentSubject.toLowerCase() || (c.textContent === 'CS' && currentSubject === 'Computer Science')) {
+        c.classList.add('active');
+      }
+    });
+
+    const chatContainer = document.getElementById('chat');
+    chatContainer.innerHTML = '';
+    history.forEach(msg => appendMessage(msg.role, msg.content));
+    renderHistorySidebar();
+  }
+  
+  async function sendMessage() {
+    if (isLoading) return;
+    const input = document.getElementById('questionInput');
+    const question = input.value.trim();
+    if (!question) return;
+    
+    appendMessage('user', question);
+    history.push({ role: 'user', content: question });
+    
+    saveActiveChatToStorage();
+    
+    input.value = '';
+    input.style.height = 'auto';
+    isLoading = true;
+    document.getElementById('sendBtn').disabled = true;
+    
+    const typingEl = appendMessage('assistant', '__typing__');
+    
+    const systemText = 'You are Napu, a helpful school tutor platform engine powered by Gemini. Answer clearly at a student level. Use mixed markdown formatting. Always wrap math equations, formula steps, or chemical distributions inside standard LaTeX formatting structures (use single $ for inline mathematical symbols and equations, or double $$ for center block equations). ' +
+      (currentSubject ? 'The subject chosen is: ' + currentSubject + '.' : '') +
+      ' For math and science problems, clearly step through derivations rules layout.';
+    
+    try {
+      const res = await fetch(API_URL, {
+        method: 'POST',
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer ' + API_KEY
+        },
+        body: JSON.stringify({
+          model: "google/gemini-2.5-flash",
+          messages: [
+            { role: "system", content: systemText },
+            ...history
+          ],
+          max_tokens: 3000
+        })
+      });
+      
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error && data.error.message ? data.error.message : 'Error ' + res.status);
+      
+      const reply = data.choices && data.choices[0] && data.choices[0].message && data.choices[0].message.content 
+        ? data.choices[0].message.content : 'No response received.';
+      
+      history.push({ role: 'assistant', content: reply });
+      saveActiveChatToStorage();
+      
+      typingEl.remove();
+      await streamMessageAnimated(reply);
+    } catch(err) {
+      if(typingEl) typingEl.remove();
+      const chat = document.getElementById('chat');
+      const errDiv = document.createElement('div');
+      errDiv.className = 'message assistant';
+      errDiv.innerHTML = '<div class="message-role">ERR</div><div class="message-content"><div class="error-msg">' + err.message + '</div></div>';
+      chat.appendChild(errDiv);
+      chat.scrollTop = chat.scrollHeight;
+    }
+    
+    isLoading = false;
+    document.getElementById('sendBtn').disabled = false;
+    input.focus();
+  }
+</script>
+</body>
+</html>

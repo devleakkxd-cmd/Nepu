@@ -2,14 +2,16 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <title>Napu — School Assistant</title>
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@300;400;500&display=swap" rel="stylesheet">
 
+<!-- KaTeX CSS and JS Engine for High-Fidelity Math Formulas -->
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
 <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
 <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
 
+<!-- EmailJS for client-side email sending -->
 <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
 
 <style>
@@ -134,7 +136,9 @@
   .credits-box strong { color: var(--text); font-weight: 500; }
 
   .history-pane { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
-  .history-list { flex: 1; overflow-y: auto; padding: 12px; display: flex; flex-direction: column; gap: 4px; }
+  .history-list { flex: 1; overflow-y: auto; padding: 12px; display: flex; flex-direction: column; gap: 4px; scrollbar-width: none; -ms-overflow-style: none; }
+  .history-list::-webkit-scrollbar { display: none; }
+  
   .history-item { width: 100%; text-align: left; background: transparent; border: none; padding: 10px 14px; color: var(--text); font-family: 'IBM Plex Sans', sans-serif; font-size: 0.85rem; cursor: pointer; display: flex; flex-direction: column; gap: 2px; border-radius: 2px; }
   .history-item:hover { background: var(--code-bg); }
   .history-item .hist-sub { font-family: 'IBM Plex Mono', monospace; font-size: 0.65rem; color: var(--text-muted); text-transform: uppercase; }
@@ -155,9 +159,10 @@
   .logo span { color: var(--text-muted); font-size: 0.85rem; font-family: 'IBM Plex Mono', monospace; margin-left: 12px; font-weight: 400; }
   .powered { font-family: 'IBM Plex Mono', monospace; font-size: 0.72rem; color: var(--text-muted); border: 1px solid var(--border-color); padding: 5px 12px; display: inline-block; }
   
-  .chat-container { flex: 1; overflow-y: auto; padding: 32px; display: flex; flex-direction: column; scrollbar-width: thin; scrollbar-color: var(--border-color) transparent; }
-  .chat-container::-webkit-scrollbar { width: 4px; }
-  .chat-container::-webkit-scrollbar-thumb { background: var(--border-color); }
+  /* ── HIDDEN SCROLLBAR CHAT PANELS ── */
+  .chat-container { flex: 1; overflow-y: auto; padding: 32px; display: flex; flex-direction: column; scrollbar-width: none; -ms-overflow-style: none; }
+  .chat-container::-webkit-scrollbar { display: none; }
+  
   .empty-state { margin: auto; text-align: center; max-width: 400px; opacity: 0.5; }
   .empty-state h2 { font-family: 'Playfair Display', serif; font-size: 2rem; margin-bottom: 10px; font-weight: 400; color: var(--text); }
   .empty-state p { font-family: 'IBM Plex Mono', monospace; font-size: 0.78rem; color: var(--text-muted); line-height: 1.7; }
@@ -166,7 +171,8 @@
   @keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
   .message-role { font-family: 'IBM Plex Mono', monospace; font-size: 0.68rem; letter-spacing: 0.12em; text-transform: uppercase; color: var(--text-muted); min-width: 60px; padding-top: 3px; flex-shrink: 0; }
   .message.user .message-role { color: var(--text); }
-  .message-content { flex: 1; font-size: 0.93rem; line-height: 1.75; color: var(--text-body); font-weight: 300; position: relative; overflow-x: auto; }
+  .message-content { flex: 1; font-size: 0.93rem; line-height: 1.75; color: var(--text-body); font-weight: 300; position: relative; overflow-x: auto; scrollbar-width: none; -ms-overflow-style: none; }
+  .message-content::-webkit-scrollbar { display: none; }
   .message.user .message-content { color: var(--text); font-weight: 400; }
   
   /* Caret indicator blinking cursor for dynamic typing layout emulation */
@@ -177,7 +183,8 @@
   .message-content p:last-child { margin-bottom: 0; }
   .message-content strong { color: var(--text); font-weight: 500; }
   .message-content code { font-family: 'IBM Plex Mono', monospace; font-size: 0.82em; background: var(--code-bg); border: var(--border); padding: 1px 6px; color: var(--text); }
-  .message-content pre { background: var(--pre-bg); border: var(--border); padding: 16px; overflow-x: auto; margin: 12px 0; font-family: 'IBM Plex Mono', monospace; font-size: 0.82rem; line-height: 1.6; }
+  .message-content pre { background: var(--pre-bg); border: var(--border); padding: 16px; overflow-x: auto; margin: 12px 0; font-family: 'IBM Plex Mono', monospace; font-size: 0.82rem; line-height: 1.6; scrollbar-width: none; -ms-overflow-style: none; }
+  .message-content pre::-webkit-scrollbar { display: none; }
   .message-content pre code { background: none; border: none; padding: 0; }
   
   .typing-dots span { display: inline-block; width: 5px; height: 5px; background: var(--text-muted); border-radius: 50%; margin: 0 2px; animation: blink 1.2s infinite; }
@@ -185,12 +192,15 @@
   .typing-dots span:nth-child(3) { animation-delay: 0.4s; }
   @keyframes blink { 0%, 80%, 100% { opacity: 0.2; } 40% { opacity: 1; } }
   
-  .subject-chips { display: flex; gap: 8px; padding: 0 32px 14px; flex-wrap: wrap; flex-shrink: 0; }
+  .subject-chips { display: flex; gap: 8px; padding: 0 32px 14px; flex-wrap: wrap; flex-shrink: 0; scrollbar-width: none; -ms-overflow-style: none; }
+  .subject-chips::-webkit-scrollbar { display: none; }
   .chip { font-family: 'IBM Plex Mono', monospace; font-size: 0.7rem; padding: 5px 12px; border: var(--border); color: var(--text-muted); cursor: pointer; transition: all 0.15s; background: transparent; white-space: nowrap; }
   .chip:hover, .chip.active { border-color: var(--text); color: var(--text); }
   
-  .input-bar { border-top: var(--border); padding: 20px 32px; display: flex; gap: 12px; align-items: flex-end; flex-shrink: 0; background: var(--bg); position: relative; box-sizing: border-box; width: 100%; }
-  textarea { flex: 1; background: transparent; border: var(--border); color: var(--text); font-family: 'IBM Plex Sans', sans-serif; font-size: 0.9rem; padding: 13px 16px; outline: none; resize: none; min-height: 48px; max-height: 160px; line-height: 1.5; transition: border-color 0.2s; font-weight: 300; box-sizing: border-box; }
+  /* ── PUSHED ALL THE WAY TO THE BOTTOM ── */
+  .input-bar { border-top: var(--border); padding: 20px 32px; display: flex; gap: 12px; align-items: flex-end; flex-shrink: 0; background: var(--bg); position: relative; box-sizing: border-box; width: 100%; margin-top: auto; padding-bottom: calc(20px + env(safe-area-inset-bottom, 0px)); }
+  textarea { flex: 1; background: transparent; border: var(--border); color: var(--text); font-family: 'IBM Plex Sans', sans-serif; font-size: 0.9rem; padding: 13px 16px; outline: none; resize: none; min-height: 48px; max-height: 160px; line-height: 1.5; transition: border-color 0.2s; font-weight: 300; box-sizing: border-box; scrollbar-width: none; -ms-overflow-style: none; }
+  textarea::-webkit-scrollbar { display: none; }
   textarea:focus { border-color: var(--text); }
   textarea::placeholder { color: var(--text-muted); }
   
@@ -199,7 +209,8 @@
   .send-btn:disabled { opacity: 0.3; cursor: default; }
   .send-btn svg { width: 18px; height: 18px; fill: none; stroke: currentColor; }
   .error-msg { font-family: 'IBM Plex Mono', monospace; font-size: 0.78rem; color: #888; border-left: 2px solid #555; padding-left: 12px; }
-  .katex-display { margin: 12px 0; overflow-x: auto; overflow-y: hidden; }
+  .katex-display { margin: 12px 0; overflow-x: auto; overflow-y: hidden; scrollbar-width: none; -ms-overflow-style: none; }
+  .katex-display::-webkit-scrollbar { display: none; }
 
   /* ══════════════════════════════════════════
      PHONE / MOBILE DEVICE GUI OVERRIDES
@@ -210,8 +221,7 @@
     .logo { font-size: 1.25rem; }
     .logo span, .powered { display: none !important; }
 
-    .subject-chips { padding: 0 16px 10px; flex-wrap: nowrap; overflow-x: auto; -webkit-overflow-scrolling: touch; scrollbar-width: none; }
-    .subject-chips::-webkit-scrollbar { display: none; }
+    .subject-chips { padding: 0 16px 10px; flex-wrap: nowrap; overflow-x: auto; -webkit-overflow-scrolling: touch; }
     .chip { padding: 6px 14px; font-size: 0.75rem; }
 
     .chat-container { padding: 16px; }
@@ -219,8 +229,8 @@
     .message-role { min-width: 42px; font-size: 0.65rem; }
     .message-content { font-size: 0.88rem; }
 
-    /* Fluid alignment system protecting mobile input positions */
-    .input-bar { padding: 12px 16px; gap: 8px; border-top: var(--border); background: var(--bg); }
+    /* Down alignment tracking protecting phone viewport bottom edges */
+    .input-bar { padding: 12px 16px; gap: 8px; border-top: var(--border); background: var(--bg); padding-bottom: calc(12px + env(safe-area-inset-bottom, 0px)); }
     textarea { padding: 10px 12px; font-size: 0.88rem; min-height: 42px; }
     .send-btn { width: 42px; height: 42px; }
 
@@ -232,6 +242,7 @@
 </head>
 <body>
 
+<!-- ── AUTH MODAL ── -->
 <div class="auth-overlay" id="authOverlay">
   <div class="auth-box">
     <div class="auth-logo">Napu <span>/ school assistant</span></div>
@@ -242,6 +253,7 @@
       <button class="auth-tab" id="tabSignup" onclick="switchAuthTab('signup')">Create Account</button>
     </div>
 
+    <!-- LOGIN FORM -->
     <div class="auth-form-step active" id="formLogin">
       <div class="auth-field">
         <label>Email</label>
@@ -255,6 +267,7 @@
       <div class="auth-msg" id="loginMsg"></div>
     </div>
 
+    <!-- SIGNUP STEP 1 -->
     <div class="auth-form-step" id="formSignup1">
       <div class="auth-field">
         <label>Full Name</label>
@@ -272,6 +285,7 @@
       <div class="auth-msg" id="signupMsg1"></div>
     </div>
 
+    <!-- SIGNUP STEP 2: Verify Code -->
     <div class="auth-form-step" id="formSignup2">
       <div style="font-family:'IBM Plex Mono',monospace; font-size:0.72rem; color:var(--text-muted); margin-bottom:18px; line-height:1.7;">
         A 6-digit verification code was sent to<br>
@@ -289,10 +303,13 @@
   </div>
 </div>
 
+<!-- Blur click capture sheet overlay -->
 <div class="sidebar-overlay" id="sidebarOverlay" onclick="toggleSidebar(false)"></div>
 
+<!-- Left Sidebar Slider Container Panel -->
 <div class="sidebar" id="sidebarMenu">
   <div class="sidebar-section">
+    <!-- Root UI Panel Menu Screen -->
     <div id="guiPanelRoot" class="gui-panel active">
       <div class="sidebar-title">Menu Workspace</div>
       <button class="menu-btn-item" onclick="switchGuiPanel('guiPanelTheme')">
@@ -301,6 +318,7 @@
       </button>
     </div>
 
+    <!-- Secondary Layer GUI View: Theme Configuration Screen -->
     <div id="guiPanelTheme" class="gui-panel">
       <button class="back-btn" onclick="switchGuiPanel('guiPanelRoot')">← Back</button>
       <div class="sidebar-title">Choose Theme</div>
@@ -313,6 +331,7 @@
     </div>
   </div>
 
+  <!-- Credits Panel Module -->
   <div class="sidebar-section">
     <div class="sidebar-title">Credits</div>
     <div class="credits-box">
@@ -322,6 +341,7 @@
     </div>
   </div>
 
+  <!-- Saved Chat Logs Section -->
   <div class="history-pane">
     <div class="sidebar-section" style="border-bottom: none; padding-bottom: 0;">
       <div class="sidebar-title" style="margin-bottom: 4px;">Saved Chats</div>
@@ -332,6 +352,7 @@
   </div>
 </div>
 
+<!-- Main Workspace Desk Space -->
 <div class="main-content">
   <header>
     <div class="header-left">

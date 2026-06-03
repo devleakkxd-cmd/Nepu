@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-<title>Napu — School Assistant</title>
+<title>Nepu — School Assistant</title>
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
 <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
@@ -46,9 +46,14 @@
     --accent: #404eed;
   }
 
-  html, body { 
-    height: 100%; 
-    height: -webkit-fill-available; 
+  /* Hide ALL scrollbars everywhere */
+  * { scrollbar-width: none !important; }
+  *::-webkit-scrollbar { display: none !important; }
+
+  html { 
+    height: 100%;
+    height: -webkit-fill-available;
+    overflow: hidden;
   }
 
   body { 
@@ -60,9 +65,11 @@
     transition: background 0.2s, color 0.2s; 
     position: relative; 
     width: 100vw;
-    /* Fix for mobile browser chrome */
-    min-height: 100vh;
-    min-height: -webkit-fill-available;
+    height: 100vh;
+    height: -webkit-fill-available;
+    /* Critical: prevent body from ever being taller than viewport */
+    max-height: 100vh;
+    max-height: -webkit-fill-available;
   }
 
   /* ── Auth Modal ── */
@@ -133,13 +140,16 @@
   .history-item .hist-preview { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; opacity: 0.85; }
   .history-empty { padding: 32px 24px; text-align: center; font-family: 'IBM Plex Mono', monospace; font-size: 0.75rem; color: var(--text-muted); line-height: 1.6; }
 
-  /* ── MAIN LAYOUT — KEY FIX ── */
+  /* ── MAIN LAYOUT ── */
   .main-content { 
     flex: 1; 
     display: flex; 
     flex-direction: column; 
-    height: 100vh; 
+    /* This is the key: constrain height so flex children don't overflow */
+    height: 100vh;
     height: -webkit-fill-available;
+    max-height: 100vh;
+    max-height: -webkit-fill-available;
     overflow: hidden; 
     width: 100%; 
     min-width: 0; 
@@ -153,7 +163,6 @@
     align-items: center; 
     justify-content: space-between; 
     flex-shrink: 0;
-    /* Prevents header from shrinking on mobile */
     min-height: 58px;
   }
   .header-left { display: flex; align-items: center; gap: 20px; }
@@ -164,26 +173,23 @@
   .logo span { color: var(--text-muted); font-size: 0.85rem; font-family: 'IBM Plex Mono', monospace; margin-left: 12px; font-weight: 400; }
   .powered { font-family: 'IBM Plex Mono', monospace; font-size: 0.72rem; color: var(--text-muted); border: var(--border); padding: 6px 14px; border-radius: 20px; }
 
-  /* ── CHAT CONTAINER — KEY FIX ── */
-  /*
-    This is the main fix. The chat area must:
-    - Start with messages from the TOP (not centered)
-    - Grow downward as messages come in
-    - Stay scrollable
-    The empty state is positioned at the top-left, not centered.
+  /* ── CHAT CONTAINER ── */
+  /* 
+     THE GAP FIX: 
+     flex:1 + min-height:0 forces the container to respect its parent's 
+     height constraint. Without min-height:0, flex children can grow 
+     past the viewport, creating the huge empty space below messages.
   */
   .chat-container { 
     flex: 1; 
+    min-height: 0; /* CRITICAL — prevents flex blowout */
     overflow-y: auto; 
+    overflow-x: hidden;
     display: flex; 
     flex-direction: column;
-    /* No justify-content: center — content starts at top */
-    scrollbar-width: none; 
     overscroll-behavior: contain;
-    /* Smooth scroll for new messages */
     scroll-behavior: smooth;
   }
-  .chat-container::-webkit-scrollbar { display: none; }
 
   /* Empty state: top-aligned, centered horizontally, with generous top padding */
   .empty-state { 
@@ -362,7 +368,9 @@
   /* ── Mobile overrides ── */
   @media (max-width: 768px) {
     header { padding: 12px 16px; min-height: 52px; }
-    .logo span, .powered { display: none !important; }
+    /* Hide subtitle span and powered badge on mobile to save space, but keep logo name */
+    .logo span { display: none !important; }
+    .powered { display: none !important; }
 
     .empty-state {
       padding: 40px 24px 24px;
@@ -407,7 +415,7 @@
 <!-- Auth Overlay -->
 <div class="auth-overlay" id="authOverlay">
   <div class="auth-box">
-    <div class="auth-logo">Napu <span>/ school assistant</span></div>
+    <div class="auth-logo">Nepu <span>/ school assistant</span></div>
     <div class="auth-subtitle">✦ Sign in to your account</div>
     <div class="auth-tabs">
       <button class="auth-tab active" id="tabLogin" onclick="switchAuthTab('login')">Login</button>
@@ -486,10 +494,10 @@
         <svg viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>
         Menu
       </button>
-      <div class="logo">Napu <span>/ school assistant</span></div>
+      <div class="logo">Nepu <span>/ school assistant</span></div>
     </div>
     <div id="headerRight">
-      <div class="powered">✦ Powered by Napu</div>
+      <div class="powered">✦ Powered by Nepu</div>
     </div>
   </header>
 
@@ -497,7 +505,7 @@
   <div class="chat-container" id="chat">
     <div class="empty-state" id="emptyState">
       <h2>Ask anything.</h2>
-      <p>Welcome to Napu. Type your question below or pick a subject tab to pivot tracking focuses.</p>
+      <p>Welcome to Nepu. Type your question below or pick a subject tab to pivot tracking focuses.</p>
     </div>
   </div>
 
@@ -534,15 +542,15 @@
   let isLoading = false;
   let activeChatId = null;
   let history = [];
-  let savedChats = JSON.parse(localStorage.getItem('napu_saved_chats')) || [];
+  let savedChats = JSON.parse(localStorage.getItem('nepu_saved_chats')) || [];
 
   const EMAILJS_PUBLIC_KEY  = 'CW59kDfZxSDxBaLbG';
   const EMAILJS_SERVICE_ID  = 'service_sfr6lrl';
   const EMAILJS_TEMPLATE_ID = 'template_pcoq54n';
   (function() { emailjs.init({ publicKey: EMAILJS_PUBLIC_KEY }); })();
 
-  const USERS_KEY = 'napu_users_v1';
-  const SESSION_KEY = 'napu_session_v1';
+  const USERS_KEY = 'nepu_users_v1';
+  const SESSION_KEY = 'nepu_session_v1';
 
   function getUsers() { return JSON.parse(localStorage.getItem(USERS_KEY) || '{}'); }
   function saveUsers(u) { localStorage.setItem(USERS_KEY, JSON.stringify(u)); }
@@ -648,13 +656,13 @@
     if (currentUser) {
       el.innerHTML = `<div class="user-badge"><span class="dot"></span><span>${currentUser.name}</span><button class="logout-btn" onclick="logout()">Sign out</button></div>`;
     } else {
-      el.innerHTML = '<div class="powered">✦ Powered by Napu</div>';
+      el.innerHTML = '<div class="powered">✦ Powered by Nepu</div>';
     }
   }
 
   window.addEventListener('DOMContentLoaded', () => {
     renderHistorySidebar();
-    const savedTheme = localStorage.getItem('napu_theme') || 'dark';
+    const savedTheme = localStorage.getItem('nepu_theme') || 'dark';
     document.getElementById('themeSelector').value = savedTheme;
     changeTheme(savedTheme);
     const session = localStorage.getItem(SESSION_KEY);
@@ -688,7 +696,7 @@
   function changeTheme(theme) {
     if (theme === 'light') document.documentElement.setAttribute('data-theme', 'light');
     else document.documentElement.removeAttribute('data-theme');
-    localStorage.setItem('napu_theme', theme);
+    localStorage.setItem('nepu_theme', theme);
   }
   
   function setSubject(el, s) {
@@ -712,7 +720,7 @@
     chat.innerHTML = `
       <div class="empty-state" id="emptyState">
         <h2>${currentSubject ? currentSubject : 'Ask anything.'} Focus</h2>
-        <p>The conversation was reset. Ask Napu anything regarding this course track.</p>
+        <p>The conversation was reset. Ask Nepu anything regarding this course track.</p>
       </div>`;
   }
   
@@ -865,7 +873,7 @@
       const match = savedChats.find(c => c.id === activeChatId);
       if (match) match.logs = history;
     }
-    localStorage.setItem('napu_saved_chats', JSON.stringify(savedChats));
+    localStorage.setItem('nepu_saved_chats', JSON.stringify(savedChats));
     renderHistorySidebar();
   }
 
@@ -920,7 +928,7 @@
     
     const typingEl = appendMessage('assistant', '__typing__');
     
-    const systemText = 'You are Napu, a helpful school tutor platform engine powered by Gemini. Answer clearly at a student level. Use mixed markdown formatting. Always wrap math equations, formula steps, or chemical distributions inside standard LaTeX formatting structures (use single $ for inline mathematical symbols and equations, or double $$ for center block equations). ' +
+    const systemText = 'You are Nepu, a helpful school tutor platform engine powered by Gemini. Answer clearly at a student level. Use mixed markdown formatting. Always wrap math equations, formula steps, or chemical distributions inside standard LaTeX formatting structures (use single $ for inline mathematical symbols and equations, or double $$ for center block equations). ' +
       (currentSubject ? 'The subject chosen is: ' + currentSubject + '.' : '') +
       ' For math and science problems, clearly step through derivations rules layout.';
     

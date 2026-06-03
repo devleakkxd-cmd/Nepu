@@ -6,12 +6,81 @@
 <title>Napu — School Assistant</title>
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@300;400;500&display=swap" rel="stylesheet">
 
-<!-- KaTeX CSS and JS Engine for High-Fidelity Math Formulas -->
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
 <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
 <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
 
+<script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
+
 <style>
+  /* ── Auth Modal Overlay ── */
+  .auth-overlay {
+    position: fixed; inset: 0; background: rgba(0,0,0,0.85);
+    z-index: 9999; display: flex; align-items: center; justify-content: center;
+    backdrop-filter: blur(4px);
+  }
+  .auth-overlay.hidden { display: none; }
+
+  .auth-box {
+    background: var(--bg); border: var(--border);
+    width: 100%; max-width: 420px; padding: 36px 32px;
+    font-family: 'IBM Plex Sans', sans-serif;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.6);
+    animation: fadeIn 0.25s ease;
+  }
+  .auth-logo {
+    font-family: 'Playfair Display', serif; font-size: 1.6rem;
+    font-weight: 700; letter-spacing: -0.02em; margin-bottom: 6px;
+  }
+  .auth-logo span { color: var(--text-muted); font-family: 'IBM Plex Mono', monospace; font-size: 0.78rem; font-weight: 400; margin-left: 8px; }
+  .auth-subtitle { font-family: 'IBM Plex Mono', monospace; font-size: 0.7rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 28px; }
+
+  .auth-tabs { display: flex; gap: 0; margin-bottom: 24px; border: var(--border); }
+  .auth-tab { flex: 1; padding: 9px; background: transparent; border: none; color: var(--text-muted); font-family: 'IBM Plex Mono', monospace; font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.08em; cursor: pointer; transition: all 0.15s; }
+  .auth-tab.active { background: var(--text); color: var(--bg); }
+
+  .auth-field { margin-bottom: 14px; }
+  .auth-field label { display: block; font-family: 'IBM Plex Mono', monospace; font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.1em; color: var(--text-muted); margin-bottom: 6px; }
+  .auth-field input {
+    width: 100%; background: var(--code-bg); border: var(--border);
+    color: var(--text); font-family: 'IBM Plex Sans', sans-serif;
+    font-size: 0.9rem; padding: 11px 14px; outline: none;
+    transition: border-color 0.2s;
+  }
+  .auth-field input:focus { border-color: var(--text); }
+  .auth-field input::placeholder { color: var(--text-muted); }
+
+  .auth-btn {
+    width: 100%; background: var(--text); color: var(--bg); border: none;
+    padding: 13px; font-family: 'IBM Plex Mono', monospace; font-size: 0.8rem;
+    text-transform: uppercase; letter-spacing: 0.1em; cursor: pointer;
+    margin-top: 6px; transition: opacity 0.2s;
+  }
+  .auth-btn:hover { opacity: 0.85; }
+  .auth-btn:disabled { opacity: 0.35; cursor: default; }
+
+  .auth-msg { font-family: 'IBM Plex Mono', monospace; font-size: 0.72rem; margin-top: 12px; min-height: 18px; }
+  .auth-msg.error { color: #e05a5a; }
+  .auth-msg.success { color: #5abf7a; }
+  .auth-msg.info { color: var(--text-muted); }
+
+  .auth-form-step { display: none; }
+  .auth-form-step.active { display: block; }
+
+  /* User badge in header */
+  .user-badge {
+    font-family: 'IBM Plex Mono', monospace; font-size: 0.7rem;
+    color: var(--text-muted); border: var(--border); padding: 5px 12px;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .user-badge .dot { width: 6px; height: 6px; border-radius: 50%; background: #5abf7a; flex-shrink: 0; }
+  .logout-btn { background: none; border: none; color: var(--text-muted); cursor: pointer; font-family: 'IBM Plex Mono', monospace; font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.05em; margin-left: 4px; }
+  .logout-btn:hover { color: var(--text); }
+
+  /* Resend code link */
+  .resend-link { background: none; border: none; color: var(--text-muted); font-family: 'IBM Plex Mono', monospace; font-size: 0.68rem; cursor: pointer; text-decoration: underline; margin-top: 8px; display: inline-block; }
+  .resend-link:hover { color: var(--text); }
+
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
   
   /* Theme Variables System */
@@ -132,18 +201,150 @@
   .send-btn svg { width: 18px; height: 18px; fill: none; stroke: currentColor; }
   .error-msg { font-family: 'IBM Plex Mono', monospace; font-size: 0.78rem; color: #888; border-left: 2px solid #555; padding-left: 12px; }
   .katex-display { margin: 12px 0; overflow-x: auto; overflow-y: hidden; }
+
+  /* ══════════════════════════════════════════
+     PHONE / MOBILE DEVICE GUI OVERRIDES
+     ══════════════════════════════════════════ */
+  @media (max-width: 600px) {
+    /* Compress authentication box layout bounds */
+    .auth-box {
+      max-width: 90%;
+      padding: 24px 20px;
+    }
+    
+    /* Minimize core layout whitespace grids */
+    header {
+      padding: 12px 16px;
+    }
+    .logo {
+      font-size: 1.2rem;
+    }
+    .logo span {
+      display: none; /* Hide subtitle track on small viewports */
+    }
+    .powered {
+      display: none; /* Emphasize layout workspace area */
+    }
+
+    /* Convert category row selection into an infinite horizontal scroll track */
+    .subject-chips {
+      padding: 0 16px 10px;
+      flex-wrap: nowrap;
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+      scrollbar-width: none; /* Firefox */
+    }
+    .subject-chips::-webkit-scrollbar {
+      display: none; /* Chrome/Safari */
+    }
+    .chip {
+      padding: 6px 14px;
+      font-size: 0.75rem;
+    }
+
+    /* Expand core screen view tracking margins */
+    .chat-container {
+      padding: 16px;
+    }
+    .message {
+      gap: 12px;
+      padding: 16px 0;
+    }
+    .message-role {
+      min-width: 42px;
+      font-size: 0.65rem;
+    }
+    .message-content {
+      font-size: 0.88rem;
+    }
+
+    /* Restructure fluid input container */
+    .input-bar {
+      padding: 12px 16px;
+      gap: 8px;
+    }
+    textarea {
+      padding: 10px 12px;
+      font-size: 0.88rem;
+      min-height: 40px;
+    }
+    .send-btn {
+      width: 40px;
+      height: 40px;
+    }
+
+    /* Modify Sidebar to support edge swiping alignments */
+    .sidebar {
+      width: 85%;
+      max-width: 280px;
+    }
+  }
 </style>
 </head>
 <body>
 
-<!-- Blur click capture sheet overlay -->
+<div class="auth-overlay" id="authOverlay">
+  <div class="auth-box">
+    <div class="auth-logo">Napu <span>/ school assistant</span></div>
+    <div class="auth-subtitle">✦ Sign in to your account</div>
+
+    <div class="auth-tabs">
+      <button class="auth-tab active" id="tabLogin" onclick="switchAuthTab('login')">Login</button>
+      <button class="auth-tab" id="tabSignup" onclick="switchAuthTab('signup')">Create Account</button>
+    </div>
+
+    <div class="auth-form-step active" id="formLogin">
+      <div class="auth-field">
+        <label>Email</label>
+        <input type="email" id="loginEmail" placeholder="you@example.com" />
+      </div>
+      <div class="auth-field">
+        <label>Password</label>
+        <input type="password" id="loginPassword" placeholder="••••••••" />
+      </div>
+      <button class="auth-btn" onclick="handleLogin()">Sign In</button>
+      <div class="auth-msg" id="loginMsg"></div>
+    </div>
+
+    <div class="auth-form-step" id="formSignup1">
+      <div class="auth-field">
+        <label>Full Name</label>
+        <input type="text" id="signupName" placeholder="Your name" />
+      </div>
+      <div class="auth-field">
+        <label>Email</label>
+        <input type="email" id="signupEmail" placeholder="you@example.com" />
+      </div>
+      <div class="auth-field">
+        <label>Password</label>
+        <input type="password" id="signupPassword" placeholder="Min. 6 characters" />
+      </div>
+      <button class="auth-btn" id="btnSendCode" onclick="handleSendCode()">Send Verification Code</button>
+      <div class="auth-msg" id="signupMsg1"></div>
+    </div>
+
+    <div class="auth-form-step" id="formSignup2">
+      <div style="font-family:'IBM Plex Mono',monospace; font-size:0.72rem; color:var(--text-muted); margin-bottom:18px; line-height:1.7;">
+        A 6-digit verification code was sent to<br>
+        <strong id="verifyEmailDisplay" style="color:var(--text);"></strong>
+      </div>
+      <div class="auth-field">
+        <label>Verification Code</label>
+        <input type="text" id="verifyCodeInput" placeholder="000000" maxlength="6" style="letter-spacing:0.2em; font-size:1.1rem; text-align:center;" />
+      </div>
+      <button class="auth-btn" onclick="handleVerifyCode()">Verify & Create Account</button>
+      <button class="resend-link" onclick="handleSendCode(true)">Resend code</button>
+      <button class="resend-link" style="margin-left:12px;" onclick="switchAuthStep('signup1')">← Back</button>
+      <div class="auth-msg" id="signupMsg2"></div>
+    </div>
+
+  </div>
+</div>
+
 <div class="sidebar-overlay" id="sidebarOverlay" onclick="toggleSidebar(false)"></div>
 
-<!-- Left Sidebar Slider Container Panel -->
 <div class="sidebar" id="sidebarMenu">
-  <!-- Multi-GUI Config Panel Section -->
   <div class="sidebar-section">
-    <!-- Root UI Panel Menu Screen -->
     <div id="guiPanelRoot" class="gui-panel active">
       <div class="sidebar-title">Menu Workspace</div>
       <button class="menu-btn-item" onclick="switchGuiPanel('guiPanelTheme')">
@@ -152,7 +353,6 @@
       </button>
     </div>
 
-    <!-- Secondary Layer GUI View: Theme Configuration Screen -->
     <div id="guiPanelTheme" class="gui-panel">
       <button class="back-btn" onclick="switchGuiPanel('guiPanelRoot')">← Back</button>
       <div class="sidebar-title">Choose Theme</div>
@@ -165,7 +365,6 @@
     </div>
   </div>
 
-  <!-- Credits Panel Module -->
   <div class="sidebar-section">
     <div class="sidebar-title">Credits</div>
     <div class="credits-box">
@@ -175,7 +374,6 @@
     </div>
   </div>
 
-  <!-- Saved Chat Logs Section -->
   <div class="history-pane">
     <div class="sidebar-section" style="border-bottom: none; padding-bottom: 0;">
       <div class="sidebar-title" style="margin-bottom: 4px;">Saved Chats</div>
@@ -186,7 +384,6 @@
   </div>
 </div>
 
-<!-- Main Workspace Desk Space -->
 <div class="main-content">
   <header>
     <div class="header-left">
@@ -196,7 +393,9 @@
       </button>
       <div class="logo">Napu <span>/ school assistant</span></div>
     </div>
-    <div class="powered">✦ Powered by Napu Co.</div>
+    <div id="headerRight">
+      <div class="powered">✦ Powered by Napu</div>
+    </div>
   </header>
 
   <div class="subject-chips">
@@ -230,7 +429,7 @@
 </div>
 
 <script>
-  const API_KEY = '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';
+  const API_KEY = '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';
   const API_URL = 'https://openrouter.ai/api/v1/chat/completions';
   
   let currentSubject = '';
@@ -239,14 +438,162 @@
   let history = [];
   let savedChats = JSON.parse(localStorage.getItem('napu_saved_chats')) || [];
 
+  const EMAILJS_PUBLIC_KEY  = 'CW59kDfZxSDxBaLbG';
+  const EMAILJS_SERVICE_ID  = 'service_sfr6lrl';
+  const EMAILJS_TEMPLATE_ID = 'template_pcoq54n';
+
+  (function() { emailjs.init({ publicKey: EMAILJS_PUBLIC_KEY }); })();
+
+  const USERS_KEY = 'napu_users_v1';
+  const SESSION_KEY = 'napu_session_v1';
+
+  function getUsers() { return JSON.parse(localStorage.getItem(USERS_KEY) || '{}'); }
+  function saveUsers(u) { localStorage.setItem(USERS_KEY, JSON.stringify(u)); }
+
+  let pendingVerification = null; 
+  let currentUser = null;
+
+  function authMsg(id, text, type) {
+    const el = document.getElementById(id);
+    el.textContent = text;
+    el.className = 'auth-msg ' + (type || '');
+  }
+
+  function switchAuthTab(tab) {
+    document.getElementById('tabLogin').classList.toggle('active', tab === 'login');
+    document.getElementById('tabSignup').classList.toggle('active', tab === 'signup');
+    document.getElementById('formLogin').classList.toggle('active', tab === 'login');
+    document.getElementById('formSignup1').classList.toggle('active', tab === 'signup');
+    document.getElementById('formSignup2').classList.remove('active');
+    authMsg('loginMsg', ''); authMsg('signupMsg1', ''); authMsg('signupMsg2', '');
+  }
+
+  function switchAuthStep(step) {
+    document.getElementById('formSignup1').classList.toggle('active', step === 'signup1');
+    document.getElementById('formSignup2').classList.toggle('active', step === 'signup2');
+  }
+
+  function handleLogin() {
+    const email = document.getElementById('loginEmail').value.trim().toLowerCase();
+    const pass  = document.getElementById('loginPassword').value;
+    if (!email || !pass) { authMsg('loginMsg', 'Please fill in all fields.', 'error'); return; }
+    const users = getUsers();
+    if (!users[email]) { authMsg('loginMsg', 'No account found with this email.', 'error'); return; }
+    if (users[email].password !== btoa(pass)) { authMsg('loginMsg', 'Incorrect password.', 'error'); return; }
+    authMsg('loginMsg', 'Signing in…', 'info');
+    loginUser(email, users[email].name);
+  }
+
+  async function handleSendCode(isResend = false) {
+    const name  = document.getElementById('signupName').value.trim();
+    const email = document.getElementById('signupEmail').value.trim().toLowerCase();
+    const pass  = document.getElementById('signupPassword').value;
+
+    if (!name || !email || !pass) { authMsg('signupMsg1', 'Please fill in all fields.', 'error'); return; }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { authMsg('signupMsg1', 'Enter a valid email address.', 'error'); return; }
+    if (pass.length < 6) { authMsg('signupMsg1', 'Password must be at least 6 characters.', 'error'); return; }
+
+    const users = getUsers();
+    if (users[email] && !isResend) { authMsg('signupMsg1', 'This email is already registered. Try logging in.', 'error'); return; }
+
+    const code = String(Math.floor(100000 + Math.random() * 900000));
+    pendingVerification = { name, email, password: btoa(pass), code };
+
+    const btn = document.getElementById('btnSendCode');
+    btn.disabled = true;
+    authMsg('signupMsg1', 'Sending verification code…', 'info');
+
+    if (EMAILJS_PUBLIC_KEY === 'YOUR_PUBLIC_KEY') {
+      pendingVerification = { name, email, password: btoa(pass), code };
+      authMsg('signupMsg1', `[DEMO] Code: ${code} — Configure EmailJS for real emails.`, 'info');
+      setTimeout(() => {
+        btn.disabled = false;
+        document.getElementById('verifyEmailDisplay').textContent = email;
+        switchAuthStep('signup2');
+        authMsg('signupMsg2', '', '');
+      }, 800);
+      return;
+    }
+
+    try {
+      await emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, {
+        to_email:    email,
+        to_name:     name,
+        verify_code: code
+      });
+      btn.disabled = false;
+      document.getElementById('verifyEmailDisplay').textContent = email;
+      switchAuthStep('signup2');
+      authMsg('signupMsg2', 'Code sent! Check your inbox (and spam folder).', 'success');
+    } catch(err) {
+      btn.disabled = false;
+      authMsg('signupMsg1', 'Failed to send email: ' + (err.text || err.message || 'Unknown error'), 'error');
+    }
+  }
+
+  function handleVerifyCode() {
+    const entered = document.getElementById('verifyCodeInput').value.trim();
+    if (!pendingVerification) { authMsg('signupMsg2', 'Session expired. Please start again.', 'error'); return; }
+    if (entered !== pendingVerification.code) { authMsg('signupMsg2', 'Incorrect code. Please try again.', 'error'); return; }
+
+    const users = getUsers();
+    users[pendingVerification.email] = { name: pendingVerification.name, password: pendingVerification.password };
+    saveUsers(users);
+
+    authMsg('signupMsg2', 'Account verified! Signing you in…', 'success');
+    setTimeout(() => loginUser(pendingVerification.email, pendingVerification.name), 800);
+  }
+
+  function loginUser(email, name) {
+    currentUser = { email, name };
+    localStorage.setItem(SESSION_KEY, JSON.stringify(currentUser));
+    document.getElementById('authOverlay').classList.add('hidden');
+    updateHeaderBadge();
+  }
+
+  function logout() {
+    currentUser = null;
+    localStorage.removeItem(SESSION_KEY);
+    history = []; activeChatId = null; currentSubject = '';
+    document.querySelectorAll('.chip').forEach(c => c.classList.remove('active'));
+    resetChatUI();
+    updateHeaderBadge();
+    document.getElementById('formLogin').classList.add('active');
+    document.getElementById('formSignup1').classList.remove('active');
+    document.getElementById('formSignup2').classList.remove('active');
+    document.getElementById('tabLogin').classList.add('active');
+    document.getElementById('tabSignup').classList.remove('active');
+    document.getElementById('loginEmail').value = '';
+    document.getElementById('loginPassword').value = '';
+    authMsg('loginMsg', '', '');
+    document.getElementById('authOverlay').classList.remove('hidden');
+  }
+
+  function updateHeaderBadge() {
+    const el = document.getElementById('headerRight');
+    if (currentUser) {
+      el.innerHTML = `<div class="user-badge"><span class="dot"></span><span>${currentUser.name}</span><button class="logout-btn" onclick="logout()">Sign out</button></div>`;
+    } else {
+      el.innerHTML = '<div class="powered">✦ Powered by Napu</div>';
+    }
+  }
+
   window.addEventListener('DOMContentLoaded', () => {
     renderHistorySidebar();
     const savedTheme = localStorage.getItem('napu_theme') || 'dark';
     document.getElementById('themeSelector').value = savedTheme;
     changeTheme(savedTheme);
+
+    const session = localStorage.getItem(SESSION_KEY);
+    if (session) {
+      try {
+        currentUser = JSON.parse(session);
+        document.getElementById('authOverlay').classList.add('hidden');
+        updateHeaderBadge();
+      } catch { logout(); }
+    }
   });
 
-  /* Slider panel open/close handler */
   function toggleSidebar(open) {
     const sidebar = document.getElementById('sidebarMenu');
     const overlay = document.getElementById('sidebarOverlay');
@@ -256,11 +603,10 @@
     } else {
       sidebar.classList.remove('open');
       overlay.classList.remove('active');
-      setTimeout(() => { switchGuiPanel('guiPanelRoot'); }, 300); // Reset GUI window back to main root on exit
+      setTimeout(() => { switchGuiPanel('guiPanelRoot'); }, 300);
     }
   }
 
-  /* Multi GUI Layer Switcher mapping controller */
   function switchGuiPanel(panelId) {
     document.querySelectorAll('.gui-panel').forEach(panel => panel.classList.remove('active'));
     document.getElementById(panelId).classList.add('active');
@@ -339,7 +685,6 @@
     chat.appendChild(div);
     chat.scrollTop = chat.scrollHeight;
     
-    // Process math parsing after text has been applied
     if (content !== '__typing__' && window.renderMathInElement) {
       renderMathInElement(contentDiv, {
         delimiters: [
@@ -354,7 +699,6 @@
     return div;
   }
 
-  /* Simulated Character-by-Character Teletype Streaming Engine */
   function streamMessageAnimated(content) {
     const emptyState = document.getElementById('emptyState');
     if (emptyState) emptyState.remove();
@@ -375,12 +719,11 @@
     chat.appendChild(div);
     
     let currentIdx = 0;
-    // Faster text distribution for fluid readability (12ms updates)
     const intervalTime = 12; 
     
     return new Promise((resolve) => {
       const timer = setInterval(() => {
-        currentIdx += 3; // Step up chunk size to keep layout rapid but visibly animated
+        currentIdx += 3; 
         if (currentIdx >= content.length) {
           currentIdx = content.length;
           clearInterval(timer);
@@ -399,7 +742,6 @@
           chat.scrollTop = chat.scrollHeight;
           resolve();
         } else {
-          // Provide raw text layout composition previewing while parsing completes
           contentDiv.innerHTML = formatText(content.substring(0, currentIdx));
           chat.scrollTop = chat.scrollHeight;
         }

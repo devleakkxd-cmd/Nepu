@@ -6,12 +6,10 @@
 <title>Napu — School Assistant</title>
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@300;400;500&display=swap" rel="stylesheet">
 
-<!-- KaTeX CSS and JS Engine for High-Fidelity Math Formulas -->
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
 <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
 <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
 
-<!-- EmailJS for client-side email sending -->
 <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
 
 <style>
@@ -103,14 +101,14 @@
     --msg-border: #eaeae0;
   }
 
-  body { background: var(--bg); color: var(--text); font-family: 'IBM Plex Sans', sans-serif; height: 100vh; display: flex; overflow: hidden; transition: background 0.2s, color 0.2s; position: relative; width: 100vw; }
+  body { background: var(--bg); color: var(--text); font-family: 'IBM Plex Sans', sans-serif; height: 100vh; height: -webkit-fill-available; display: flex; overflow: hidden; transition: background 0.2s, color 0.2s; position: relative; width: 100vw; }
   
   /* Backdrop overlay when slider panel menu is visible */
-  .sidebar-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 998; display: none; opacity: 0; transition: opacity 0.3s ease; backdrop-filter: blur(4px); }
+  .sidebar-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 998; display: none; opacity: 0; transition: opacity 0.25s ease; backdrop-filter: blur(3px); -webkit-backdrop-filter: blur(3px); }
   .sidebar-overlay.active { display: block; opacity: 1; }
 
   /* Animated Left Slider Panel (Sidebar) */
-  .sidebar { position: fixed; top: 0; bottom: 0; left: -300px; width: 280px; height: 100%; border-right: var(--border); display: flex; flex-direction: column; background: var(--bg); z-index: 999; transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), background 0.2s; box-shadow: 10px 0 30px rgba(0,0,0,0.3); }
+  .sidebar { position: fixed; top: 0; bottom: 0; left: -300px; width: 280px; height: 100%; border-right: var(--border); display: flex; flex-direction: column; background: var(--bg); z-index: 999; transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), background 0.2s; box-shadow: 10px 0 30px rgba(0,0,0,0.4); will-change: transform; }
   .sidebar.open { transform: translateX(300px); }
   
   .sidebar-section { border-bottom: var(--border); padding: 20px; }
@@ -144,7 +142,7 @@
   .history-empty { padding: 20px; text-align: center; font-family: 'IBM Plex Mono', monospace; font-size: 0.72rem; color: var(--text-muted); line-height: 1.5; margin: auto 0; }
 
   /* Main Area Workspace Setup */
-  .main-content { flex: 1; display: flex; flex-direction: column; height: 100vh; overflow: hidden; width: 100%; min-width: 0; }
+  .main-content { flex: 1; display: flex; flex-direction: column; height: 100vh; height: -webkit-fill-available; overflow: hidden; width: 100%; min-width: 0; position: relative; }
   header { border-bottom: var(--border); padding: 18px 32px; display: flex; align-items: center; justify-content: space-between; flex-shrink: 0; gap: 16px; }
   .header-left { display: flex; align-items: center; gap: 16px; }
   
@@ -191,7 +189,7 @@
   .chip { font-family: 'IBM Plex Mono', monospace; font-size: 0.7rem; padding: 5px 12px; border: var(--border); color: var(--text-muted); cursor: pointer; transition: all 0.15s; background: transparent; white-space: nowrap; }
   .chip:hover, .chip.active { border-color: var(--text); color: var(--text); }
   
-  .input-bar { border-top: var(--border); padding: 20px 32px; display: flex; gap: 12px; align-items: flex-end; flex-shrink: 0; width: 100%; box-sizing: border-box; }
+  .input-bar { border-top: var(--border); padding: 20px 32px; display: flex; gap: 12px; align-items: flex-end; flex-shrink: 0; background: var(--bg); position: relative; box-sizing: border-box; width: 100%; }
   textarea { flex: 1; background: transparent; border: var(--border); color: var(--text); font-family: 'IBM Plex Sans', sans-serif; font-size: 0.9rem; padding: 13px 16px; outline: none; resize: none; min-height: 48px; max-height: 160px; line-height: 1.5; transition: border-color 0.2s; font-weight: 300; box-sizing: border-box; }
   textarea:focus { border-color: var(--text); }
   textarea::placeholder { color: var(--text-muted); }
@@ -207,83 +205,33 @@
      PHONE / MOBILE DEVICE GUI OVERRIDES
      ══════════════════════════════════════════ */
   @media (max-width: 600px) {
-    .auth-box {
-      max-width: 92%;
-      padding: 24px 20px;
-    }
-    
-    header {
-      padding: 14px 16px;
-    }
-    .logo {
-      font-size: 1.25rem;
-    }
-    .logo span, .powered {
-      display: none !important;
-    }
+    .auth-box { max-width: 92%; padding: 24px 20px; }
+    header { padding: 14px 16px; }
+    .logo { font-size: 1.25rem; }
+    .logo span, .powered { display: none !important; }
 
-    .subject-chips {
-      padding: 0 16px 10px;
-      flex-wrap: nowrap;
-      overflow-x: auto;
-      -webkit-overflow-scrolling: touch;
-      scrollbar-width: none;
-    }
-    .subject-chips::-webkit-scrollbar {
-      display: none;
-    }
-    .chip {
-      padding: 6px 14px;
-      font-size: 0.75rem;
-    }
+    .subject-chips { padding: 0 16px 10px; flex-wrap: nowrap; overflow-x: auto; -webkit-overflow-scrolling: touch; scrollbar-width: none; }
+    .subject-chips::-webkit-scrollbar { display: none; }
+    .chip { padding: 6px 14px; font-size: 0.75rem; }
 
-    .chat-container {
-      padding: 16px;
-    }
-    .message {
-      gap: 12px;
-      padding: 16px 0;
-    }
-    .message-role {
-      min-width: 42px;
-      font-size: 0.65rem;
-    }
-    .message-content {
-      font-size: 0.88rem;
-    }
+    .chat-container { padding: 16px; }
+    .message { gap: 12px; padding: 16px 0; }
+    .message-role { min-width: 42px; font-size: 0.65rem; }
+    .message-content { font-size: 0.88rem; }
 
-    /* ── Secure text box allocation bounds for phone screens ── */
-    .input-bar {
-      padding: 12px;
-      gap: 8px;
-      width: 100%;
-      max-width: 100vw;
-    }
-    textarea {
-      padding: 10px 12px;
-      font-size: 0.88rem;
-      min-height: 42px;
-    }
-    .send-btn {
-      width: 42px;
-      height: 42px;
-    }
+    /* Fluid alignment system protecting mobile input positions */
+    .input-bar { padding: 12px 16px; gap: 8px; border-top: var(--border); background: var(--bg); }
+    textarea { padding: 10px 12px; font-size: 0.88rem; min-height: 42px; }
+    .send-btn { width: 42px; height: 42px; }
 
-    /* ── FIX: Force Drawer Panel Layer Visibility above all stacks ── */
-    .sidebar {
-      width: 280px;
-      max-width: 85vw;
-      left: -290px; /* Aligned base positioning */
-    }
-    .sidebar.open {
-      transform: translateX(290px); /* Hardware-accelerated sliding logic */
-    }
+    /* Absolute translation parameters keeping sidebar stack elements active */
+    .sidebar { width: 280px; max-width: 85vw; left: -300px; }
+    .sidebar.open { transform: translateX(300px); }
   }
 </style>
 </head>
 <body>
 
-<!-- ── AUTH MODAL ── -->
 <div class="auth-overlay" id="authOverlay">
   <div class="auth-box">
     <div class="auth-logo">Napu <span>/ school assistant</span></div>
@@ -294,7 +242,6 @@
       <button class="auth-tab" id="tabSignup" onclick="switchAuthTab('signup')">Create Account</button>
     </div>
 
-    <!-- LOGIN FORM -->
     <div class="auth-form-step active" id="formLogin">
       <div class="auth-field">
         <label>Email</label>
@@ -308,7 +255,6 @@
       <div class="auth-msg" id="loginMsg"></div>
     </div>
 
-    <!-- SIGNUP STEP 1 -->
     <div class="auth-form-step" id="formSignup1">
       <div class="auth-field">
         <label>Full Name</label>
@@ -326,7 +272,6 @@
       <div class="auth-msg" id="signupMsg1"></div>
     </div>
 
-    <!-- SIGNUP STEP 2: Verify Code -->
     <div class="auth-form-step" id="formSignup2">
       <div style="font-family:'IBM Plex Mono',monospace; font-size:0.72rem; color:var(--text-muted); margin-bottom:18px; line-height:1.7;">
         A 6-digit verification code was sent to<br>
@@ -344,13 +289,10 @@
   </div>
 </div>
 
-<!-- Blur click capture sheet overlay -->
 <div class="sidebar-overlay" id="sidebarOverlay" onclick="toggleSidebar(false)"></div>
 
-<!-- Left Sidebar Slider Container Panel -->
 <div class="sidebar" id="sidebarMenu">
   <div class="sidebar-section">
-    <!-- Root UI Panel Menu Screen -->
     <div id="guiPanelRoot" class="gui-panel active">
       <div class="sidebar-title">Menu Workspace</div>
       <button class="menu-btn-item" onclick="switchGuiPanel('guiPanelTheme')">
@@ -359,7 +301,6 @@
       </button>
     </div>
 
-    <!-- Secondary Layer GUI View: Theme Configuration Screen -->
     <div id="guiPanelTheme" class="gui-panel">
       <button class="back-btn" onclick="switchGuiPanel('guiPanelRoot')">← Back</button>
       <div class="sidebar-title">Choose Theme</div>
@@ -372,7 +313,6 @@
     </div>
   </div>
 
-  <!-- Credits Panel Module -->
   <div class="sidebar-section">
     <div class="sidebar-title">Credits</div>
     <div class="credits-box">
@@ -382,7 +322,6 @@
     </div>
   </div>
 
-  <!-- Saved Chat Logs Section -->
   <div class="history-pane">
     <div class="sidebar-section" style="border-bottom: none; padding-bottom: 0;">
       <div class="sidebar-title" style="margin-bottom: 4px;">Saved Chats</div>
@@ -393,7 +332,6 @@
   </div>
 </div>
 
-<!-- Main Workspace Desk Space -->
 <div class="main-content">
   <header>
     <div class="header-left">
